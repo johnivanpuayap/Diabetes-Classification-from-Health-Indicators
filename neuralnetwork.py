@@ -8,6 +8,7 @@ from imblearn.over_sampling import SMOTE
 import matplotlib.pyplot as plt
 from collections import Counter
 import numpy as np
+from keras.callbacks import EarlyStopping
 
 
 # Load your dataset
@@ -40,7 +41,7 @@ axs[1].set_title('Class Distribution after SMOTE')
 
 
 # Define a function to create the model
-def create_model(layers=1, activation='relu', neurons=64,):
+def create_model(layers=1, activation='relu', neurons=64, batch_size=32, epochs=10):
     model = Sequential()
     model.add(Input(shape=(X_train_smote.shape[1],)))
     model.add(Dense(units=neurons, activation=activation))
@@ -48,7 +49,9 @@ def create_model(layers=1, activation='relu', neurons=64,):
         model.add(Dense(units=neurons, activation=activation))
     model.add(Dense(3, activation='softmax'))  # 3 output classes (0, 1, 2) for no diabetes, prediabetes, and diabetes
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return model
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, restore_best_weights=True)
+    history = model.fit(X_train_smote, y_train_smote, batch_size=batch_size, epochs=epochs, verbose=0, validation_split=0.2, callbacks=[early_stopping])
+    return model, history
 
 print("Create a KerasClassifier based on the function")
 
@@ -75,6 +78,13 @@ grid_search.fit(X_train_smote, y_train_smote)
 
 # Print the best parameters
 print("Best parameters found: ", grid_search.best_params_)
+
+# Access the history object from the best_estimator_ attribute of GridSearchCV
+best_model_history = grid_search.best_estimator_.model.history
+
+# Retrieve the number of epochs
+num_epochs = len(best_model_history.history['loss'])
+print("Number of epochs:", num_epochs)
 
 # Predictions
 y_pred = grid_search.predict(X_test)

@@ -33,35 +33,6 @@ df_models_output = pd.DataFrame(columns=['model', 'accuracy', 'precision', 'reca
 # defining a custom scorer for f1_score
 f1_scorer = make_scorer(f1_score, average='macro')
 
-# GRADIENT BOOSTING (LIGHTGBM) MODEL
-import lightgbm as lgb
-
-lgb_model = lgb.LGBMClassifier()
-
-# Random Undersampled data
-#lgb_model.fit(X_undersample, y_undersample)
-
-# SMOTE Oversampled data
-#lgb_model.fit(X_train_SMOTE, y_train_SMOTE)
-
-# SMOTE-ENN Oversampled data
-lgb_model.fit(X_train_smote, y_train_smote)
-
-# Prediction
-y_pred = lgb_model.predict(X_test)
-
-print("Confusion Matrix:")
-print(confusion_matrix(y_test, y_pred))
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
-
-# Save the model to disk
-with open('mnb_spam_detector.pkl', 'wb') as file:
-    pickle.dump(lgb_model, file)
-
-exit()
-
-
 
 def compute_evaluation_metric(algo,X_test,y_actual,y_pred,y_pred_prob):
     cm=confusion_matrix(y_actual,y_pred,labels=y.value_counts().index)
@@ -102,7 +73,6 @@ def compute_evaluation_metric(algo,X_test,y_actual,y_pred,y_pred_prob):
 mnb = MultinomialNB(alpha=0.1)  # Multinomial Naive Bayes
 svc = SVC(C=10, gamma=0.1, kernel='sigmoid', probability=True)  # Support Vector Machine
 knn = KNeighborsClassifier()  # K-nearest Neighbors
-rf = RandomForestClassifier(criterion='gini', max_features='sqrt', random_state=33)  # Random Forest
 xgb = XGBClassifier(learning_rate=0.1, n_estimators=150, random_state=33)  # Extreme Gradient Boosting
 adbst = AdaBoostClassifier(learning_rate=0.1, n_estimators=200, random_state=33)  # Adaptive Boosting
 
