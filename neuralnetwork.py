@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import numpy as np
 from keras.callbacks import EarlyStopping
+import pickle
 
 
 # Load your dataset
@@ -94,3 +95,7 @@ print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
+
+
+with open('nn_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(model, file)

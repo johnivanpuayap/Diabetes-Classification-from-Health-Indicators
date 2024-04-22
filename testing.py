@@ -11,6 +11,8 @@ from sklearn.ensemble import StackingClassifier, VotingClassifier, AdaBoostClass
 from xgboost import XGBClassifier
 from sklearn.neighbors import KNeighborsClassifier
 import pickle
+from imblearn.combine import SMOTEENN
+import lightgbm as lgb
 
 # Load your dataset
 df = pd.read_csv('diabetes_012_health_indicators_BRFSS2015.csv')
@@ -22,10 +24,38 @@ y = df['Diabetes_012']
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-print("Apply SMOTE to balance the training data")
-# Apply SMOTE to balance the training data
-smote = SMOTE(random_state=42)
-X_train_smote, y_train_smote = smote.fit_resample(X_train, y_train)
+# Instantiate SMOTE-ENN
+smote_enn = SMOTEENN()
+
+# Fit and resample the data
+X_train_smote, y_train_smote = smote_enn.fit_resample(X_train, y_train)
+
+
+lgb_model = lgb.LGBMClassifier()
+
+# Random Undersampled data
+#lgb_model.fit(X_undersample, y_undersample)
+
+# SMOTE Oversampled data
+#lgb_model.fit(X_train_SMOTE, y_train_SMOTE)
+
+# SMOTE-ENN Oversampled data
+lgb_model.fit(X_train_smote, y_train_smote)
+
+
+# Prediction
+y_pred = lgb_model.predict(X_test)
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+# Save the model to disk
+with open('diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(lgb_model, file)
+
+exit()
 
 # creating a dataframe for storing model outputs
 df_models_output = pd.DataFrame(columns=['model', 'accuracy', 'precision', 'recall', 'roc', 'f1_score'])
@@ -71,10 +101,9 @@ def compute_evaluation_metric(algo,X_test,y_actual,y_pred,y_pred_prob):
 
 # creating instances for all the classifiers
 mnb = MultinomialNB(alpha=0.1)  # Multinomial Naive Bayes
-svc = SVC(C=10, gamma=0.1, kernel='sigmoid', probability=True)  # Support Vector Machine
 knn = KNeighborsClassifier()  # K-nearest Neighbors
-xgb = XGBClassifier(learning_rate=0.1, n_estimators=150, random_state=33)  # Extreme Gradient Boosting
 adbst = AdaBoostClassifier(learning_rate=0.1, n_estimators=200, random_state=33)  # Adaptive Boosting
+svc = SVC(C=10, gamma=0.1, kernel='sigmoid', probability=True)  # Support Vector Machine
 
 estimators=[('nb',mnb),('svc',svc),('xg',xgb)]
 Vclf=VotingClassifier(estimators=estimators,voting='soft') #voting classifier
@@ -84,7 +113,7 @@ sclf=StackingClassifier(estimators=estimators,final_estimator=final_estimator) #
 
 
 #fit the train data of each model and save the output to dataframe
-for modl in (mnb,svc,knn,rf,xgb,adbst,Vclf,sclf):
+for modl in (mnb,svc,knn,adbst,Vclf,sclf):
     print(type(modl).__name__)
     modl.fit(X_train_smote,y_train_smote)
     y_pred=modl.predict(X_test)
@@ -95,8 +124,21 @@ for modl in (mnb,svc,knn,rf,xgb,adbst,Vclf,sclf):
 df_models_output.sort_values(by=['accuracy','f1_score'],ascending=False)
 
 
-# Save the model to disk
-with open('mnb_spam_detector.pkl', 'wb') as file:
-    pickle.dump(lgb, file)
+# Save the models to disk
+with open('mnb_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(mnb, file)
+
+with open('svc_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(svc, file)
+
+with open('knn_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(knn, file)
+
+with open('adbst_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(adbst, file)
     
-    
+with open('Vclf_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(Vclf, file)
+
+with open('sclf_diabetes_detector.pkl', 'wb') as file:
+    pickle.dump(sclf, file)
